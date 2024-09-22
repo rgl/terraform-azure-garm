@@ -1,0 +1,9 @@
+terraform-azure-garm-example-repository/
+.vagrant/
+.terraform/
+.terraform.tfstate*
+terraform.tfstate*
+secrets*
+tfplan
+*.log
+garm-cli*
