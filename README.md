@@ -99,6 +99,7 @@ export TF_LOG=TRACE
 export TF_LOG_PATH=terraform.log
 terraform init
 terraform plan -out=tfplan
+# NB beware of https://letsencrypt.org/docs/duplicate-certificate-limit/
 time terraform apply tfplan
 ```
 
