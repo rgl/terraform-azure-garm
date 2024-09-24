@@ -29,7 +29,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: [self-hosted, azure, amd64, ubuntu-22.04]
+    runs-on: garm-azure-amd64-ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: linux
@@ -182,7 +182,7 @@ Create a (runner) pool associated with the added github repository:
   --enabled true \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags self-hosted,azure,amd64,ubuntu-22.04 \
+  --tags garm-azure-amd64-ubuntu-22.04 \
   --repo "$repo_id" \
   --runner-prefix rgl-garm \
   --provider-name azure \
