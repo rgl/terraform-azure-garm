@@ -8,6 +8,12 @@ terraform {
       source  = "hashicorp/random"
       version = "3.6.3"
     }
+    # see https://github.com/Tobotimus/terraform-provider-toml
+    # see https://registry.terraform.io/providers/Tobotimus/toml
+    toml = {
+      source  = "Tobotimus/toml"
+      version = "0.3.0"
+    }
     # see https://github.com/terraform-providers/terraform-provider-azurerm
     # see https://registry.terraform.io/providers/hashicorp/azurerm
     azurerm = {
@@ -206,7 +212,7 @@ resource "azurerm_container_group" "garm" {
           disable_auth = false
 
           [jwt_auth]
-          secret = ${jsonencode(random_password.garm_jwt_auth.result)}
+          secret = ${provider::toml::encode(random_password.garm_jwt_auth.result)}
           time_to_live = "8760h"
 
           [apiserver]
@@ -216,7 +222,7 @@ resource "azurerm_container_group" "garm" {
 
           [database]
           backend = "sqlite3"
-          passphrase = ${jsonencode(random_password.garm_database_passphrase.result)}
+          passphrase = ${provider::toml::encode(random_password.garm_database_passphrase.result)}
 
           [database.sqlite3]
           db_file = "/data/garm.db"
@@ -227,16 +233,16 @@ resource "azurerm_container_group" "garm" {
           description = "Azure"
 
           [provider.external]
-            provider_executable = "/opt/garm/providers.d/garm-provider-azure"
-            config_file = "/etc/garm/garm-provider-azure.toml"
+          provider_executable = "/opt/garm/providers.d/garm-provider-azure"
+          config_file = "/etc/garm/garm-provider-azure.toml"
           EOF
         ),
         # see https://github.com/cloudbase/garm-provider-azure
         "garm-provider-azure.toml" = base64encode(<<-EOF
-          location = ${jsonencode(var.location)}
+          location = ${provider::toml::encode(var.location)}
 
           [credentials]
-          subscription_id = ${jsonencode(data.azurerm_client_config.current.subscription_id)}
+          subscription_id = ${provider::toml::encode(data.azurerm_client_config.current.subscription_id)}
           EOF
         ),
       }
