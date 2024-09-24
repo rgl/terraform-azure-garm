@@ -97,6 +97,7 @@ cd /vagrant
 export CHECKPOINT_DISABLE=1
 export TF_LOG=TRACE
 export TF_LOG_PATH=terraform.log
+rm -f "$TF_LOG_PATH"
 terraform init
 terraform plan -out=tfplan
 # NB beware of https://letsencrypt.org/docs/duplicate-certificate-limit/
