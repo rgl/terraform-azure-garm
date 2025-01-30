@@ -1,6 +1,6 @@
 # see https://github.com/hashicorp/terraform
 terraform {
-  required_version = "1.9.6"
+  required_version = "1.10.5"
   required_providers {
     # see https://github.com/hashicorp/terraform-provider-random
     # see https://registry.terraform.io/providers/hashicorp/random
@@ -18,7 +18,7 @@ terraform {
     # see https://registry.terraform.io/providers/hashicorp/azurerm
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.3.0"
+      version = "4.16.0"
     }
   }
 }
@@ -105,15 +105,15 @@ resource "azurerm_storage_account" "garm" {
 }
 
 resource "azurerm_storage_share" "garm_caddy_data" {
-  name                 = "garm-caddy-data"
-  storage_account_name = azurerm_storage_account.garm.name
-  quota                = 1
+  name               = "garm-caddy-data"
+  storage_account_id = azurerm_storage_account.garm.id
+  quota              = 1
 }
 
 resource "azurerm_storage_share" "garm_garm_data" {
-  name                 = "garm-garm-data"
-  storage_account_name = azurerm_storage_account.garm.name
-  quota                = 1
+  name               = "garm-garm-data"
+  storage_account_id = azurerm_storage_account.garm.id
+  quota              = 1
 }
 
 resource "azurerm_log_analytics_workspace" "garm" {
@@ -145,7 +145,7 @@ resource "azurerm_container_group" "garm" {
 
   container {
     name   = "caddy"
-    image  = "caddy:2"
+    image  = "caddy:2.9.1" # see https://hub.docker.com/_/caddy
     cpu    = "0.5"
     memory = "0.2"
 
@@ -187,7 +187,7 @@ resource "azurerm_container_group" "garm" {
 
   container {
     name   = "garm"
-    image  = "ghcr.io/cloudbase/garm:v0.1.5"
+    image  = "ghcr.io/cloudbase/garm:v0.1.5" # see https://github.com/cloudbase/garm/pkgs/container/garm
     cpu    = "0.5"
     memory = "1.0"
 
@@ -213,7 +213,7 @@ resource "azurerm_container_group" "garm" {
 
           [jwt_auth]
           secret = ${provider::toml::encode(random_password.garm_jwt_auth.result)}
-          time_to_live = "8760h"
+          time_to_live = "8760h" # 365d.
 
           [apiserver]
           bind = "127.0.0.1"

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-terraform_version='1.9.6' # see https://github.com/hashicorp/terraform/releases
+terraform_version='1.10.5' # see https://github.com/hashicorp/terraform/releases
 
 # install terraform.
 wget -q "https://releases.hashicorp.com/terraform/$terraform_version/terraform_${terraform_version}_linux_amd64.zip"
