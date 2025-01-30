@@ -19,6 +19,7 @@ If you are using libvirt, you should already known what to do.
 At GitHub, create a new repository, in this example, its called `terraform-azure-garm-example-repository`, then clone, add, and push the following content:
 
 ```bash
+# see https://github.com/rgl/terraform-azure-garm-example-repository
 git clone git@github.com:rgl/terraform-azure-garm-example-repository.git
 pushd terraform-azure-garm-example-repository
 install -d .github/workflows
@@ -26,6 +27,7 @@ cat >.github/workflows/build.yml <<'EOF'
 name: build
 on:
   - push
+  - workflow_dispatch
 jobs:
   build:
     name: Build
@@ -56,7 +58,7 @@ EOF
 cat >README.md <<'EOF'
 # About
 
-[![Build status](https://github.com/rgl/terraform-azure-garm-example-repository/workflows/build/badge.svg)](https://github.com/rgl/terraform-azure-garm-example-repository/actions?query=workflow%3Abuild)
+[![build](https://github.com/rgl/terraform-azure-garm-example-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl/terraform-azure-garm-example-repository/actions/workflows/build.yml)
 EOF
 git add .
 git commit -m init
@@ -171,6 +173,9 @@ Create a (runner) pool associated with the added github repository:
 #    resources) in a new (and ephemeral) azure resource group with the prefix
 #    set with --runner-prefix, e.g., --runner-prefix rgl-garm, will create a
 #    resource group named rgl-garm-r2BxRNWHNSV4.
+# NB while I was testing this, each fresh runner took about 4m to execute the
+#    example build job. when there was an idle runner available, it took about
+#    20s.
 # NB see prices at https://cloudprice.net/?region=francecentral&currency=EUR&sortField=linuxPrice&sortOrder=true&_memoryInMB_min=4&_memoryInMB_max=16&filter=Standard_F.%2B_v2&timeoption=month&columns=name%2CnumberOfCores%2CmemoryInMB%2CresourceDiskSizeInMB%2ClinuxPrice%2CwindowsPrice%2C__alternativevms%2C__savingsOptions%2CbestPriceRegion
 # NB VM flavor Standard_F2s_v2 is 2 vCPU,  4 GB RAM. 16 GB Temp Disk. €0.0908/hour.  €66.25/month.
 # NB VM flavor Standard_F4s_v2 is 4 vCPU,  8 GB RAM. 32 GB Temp Disk. €0.1815/hour. €132.49/month.
@@ -202,8 +207,18 @@ pool_id="$(./garm-cli pool list "--repo=$repo_id" | perl -F'\s*\|\s*' -lane 'pri
   "$pool_id"
 ```
 
-Destroy the solution, starting by destroying the runners, then the pools, then
-the infrastructure:
+Go to the example repository and manually run the build workflow, e.g., click
+the "Run workflow" button at:
+
+https://github.com/rgl/terraform-azure-garm-example-repository/actions/workflows/build.yml
+
+Then go into the Azure Portal, and observe the resources being created, and deleted.
+
+You should also fiddle with the `--min-idle-runners` setting as exemplified above.
+
+Finally, when you are done with this, destroy the entire example.
+
+Start by destroying the runners, then the pools, then the infrastructure:
 
 ```bash
 ./garm-cli pool update --min-idle-runners 0 "$pool_id"

@@ -47,7 +47,7 @@ data "azurerm_subscription" "current" {
 
 # NB this name must be unique within the given azure region/location.
 #    it will be used as the container public FQDN as {dns_name_label}.{location}.azurecontainer.io.
-# NB this FQDN length is limited to Let's Encrypt Certicate CN maximum length of 64 characters.
+# NB this FQDN length is limited to Let's Encrypt Certificate CN maximum length of 64 characters.
 locals {
   # NB this results in a 32 character string. e.g. f64e997403f65d32aa7fb0a482c49e1b.
   dns_name_label = replace(uuidv5("url", "https://azurecontainer.io/${data.azurerm_client_config.current.subscription_id}/${var.resource_group_name}/garm"), "/\\-/", "")
