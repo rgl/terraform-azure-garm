@@ -16,7 +16,13 @@ If you are using Hyper-V, [configure Hyper-V in your local machine](https://gith
 
 If you are using libvirt, you should already known what to do.
 
-At GitHub, create a new repository, in this example, its called `terraform-azure-garm-example-repository`, then clone, add, and push the following content:
+The following steps will show how to use garm to manage self-hosted runners, use
+them in a single user repository, and in all the repositories of a single
+organization.
+
+At your GitHub user account, create a new repository, in this example, its
+called `terraform-azure-garm-example-repository`, then clone, add, and push
+the following content:
 
 ```bash
 # see https://github.com/rgl/terraform-azure-garm-example-repository
@@ -38,6 +44,8 @@ jobs:
         run: uname -a
       - name: os
         run: cat /etc/os-release
+      - name: environment variables
+        run: env | sort
       - name: current user
         run: id
       - name: sudo user
@@ -59,6 +67,58 @@ cat >README.md <<'EOF'
 # About
 
 [![build](https://github.com/rgl/terraform-azure-garm-example-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl/terraform-azure-garm-example-repository/actions/workflows/build.yml)
+EOF
+git add .
+git commit -m init
+git push
+popd
+```
+
+Repeat the process, but in the context of the `rgl-example` organization:
+
+```bash
+# see https://github.com/rgl-example/terraform-azure-garm-org-example-repository
+git clone git@github.com:rgl-example/terraform-azure-garm-org-example-repository.git
+pushd terraform-azure-garm-org-example-repository
+install -d .github/workflows
+cat >.github/workflows/build.yml <<'EOF'
+name: build
+on:
+  - push
+  - workflow_dispatch
+jobs:
+  build:
+    name: Build
+    runs-on: garm-org-azure-amd64-ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: linux
+        run: uname -a
+      - name: os
+        run: cat /etc/os-release
+      - name: environment variables
+        run: env | sort
+      - name: current user
+        run: id
+      - name: sudo user
+        run: sudo id
+      - name: network interfaces
+        run: ip addr
+      - name: df
+        run: df -h
+      - name: installed packages
+        run: dpkg -l
+      - name: running applications
+        run: ps auxww
+      - name: working directory
+        run: pwd
+      - name: working directory files
+        run: find -type f
+EOF
+cat >README.md <<'EOF'
+# About
+
+[![build](https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml)
 EOF
 git add .
 git commit -m init
@@ -90,6 +150,7 @@ az account show
 # set the subscription.
 export ARM_SUBSCRIPTION_ID="<YOUR-SUBSCRIPTION-ID>"
 az account set --subscription "$ARM_SUBSCRIPTION_ID"
+az account show
 ```
 
 Provision the azure infrastructure:
@@ -109,6 +170,7 @@ time terraform apply tfplan
 In a different shell, show the garm logs:
 
 ```bash
+export ARM_SUBSCRIPTION_ID="<YOUR-SUBSCRIPTION-ID>"
 # NB to show all the containers logs omit --container garm.
 az container logs \
   --resource-group rgl-garm \
@@ -136,13 +198,14 @@ garm_admin_password="$(tr -dc 'A-Za-z0-9@#$%^&*()-_=+[]{}|;:,.<>?' < /dev/urando
   --password "$garm_admin_password"
 ```
 
-Add a github access token:
+Add a user GitHub Personal Access Token (PAT):
 
 ```bash
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
 #     https://github.com/cloudbase/garm/blob/v0.1.5/doc/github_credentials.md#adding-github-credentials
+#    the pat should end up with the admin:repo_hook and repo scopes.
 github_token="ghp_replace-with-the-rest-of-your-github-token"
 ./garm-cli github credentials add \
   --endpoint github.com \
@@ -152,7 +215,7 @@ github_token="ghp_replace-with-the-rest-of-your-github-token"
   --pat-oauth-token "$github_token"
 ```
 
-Add a github repository:
+Add a user GitHub repository:
 
 ```bash
 repo_name='terraform-azure-garm-example-repository'
@@ -166,7 +229,38 @@ repo_name='terraform-azure-garm-example-repository'
 repo_id="$(./garm-cli repo list | REPO_NAME="$repo_name" perl -F'\s*\|\s*' -lane 'print $F[1] if $F[3] eq $ENV{REPO_NAME}')"
 ```
 
-Create a (runner) pool associated with the added github repository:
+Add a organization GitHub Personal Access Token (PAT), in these examples, we
+use the `rgl-example` organization:
+
+```bash
+# NB you need to go into your github account and create a new token at
+#    https://github.com/settings/tokens. create a classic token with
+#    the permissions described at:
+#     https://github.com/cloudbase/garm/blob/v0.1.5/doc/github_credentials.md#adding-github-credentials
+#    the pat should end up with the admin:org, admin:org_hook, admin:repo_hook and repo scopes.
+org_github_token="ghp_replace-with-the-rest-of-your-organization-github-token"
+./garm-cli github credentials add \
+  --endpoint github.com \
+  --name rgl-example \
+  --description "GitHub PAT for the rgl-example organization" \
+  --auth-type pat \
+  --pat-oauth-token "$org_github_token"
+```
+
+Add a GitHub organization:
+
+```bash
+org_name='rgl-example'
+./garm-cli org add \
+  --credentials rgl-example \
+  --name "$org_name" \
+  --install-webhook \
+  --random-webhook-secret
+# TODO simplify the org_id extraction depending on the outcome of https://github.com/cloudbase/garm/issues/292.
+org_id="$(./garm-cli org list | ORG_NAME="$org_name" perl -F'\s*\|\s*' -lane 'print $F[1] if $F[2] eq $ENV{ORG_NAME}')"
+```
+
+Create a Ubuntu (runner) pool associated with a GitHub repository:
 
 ```bash
 # NB for each github action job run, garm will create a vm (and related azure
@@ -216,19 +310,65 @@ Then go into the Azure Portal, and observe the resources being created, and dele
 
 You should also fiddle with the `--min-idle-runners` setting as exemplified above.
 
+Create a Ubuntu (runner) pool associated with a GitHub organization:
+
+```bash
+# NB for each github action job run, garm will create a vm (and related azure
+#    resources) in a new (and ephemeral) azure resource group with the prefix
+#    set with --runner-prefix, e.g., --runner-prefix rgl-garm, will create a
+#    resource group named rgl-garm-r2BxRNWHNSV4.
+# NB while I was testing this, each fresh runner took about 4m to execute the
+#    example build job. when there was an idle runner available, it took about
+#    20s.
+# NB see prices at https://cloudprice.net/?region=francecentral&currency=EUR&sortField=linuxPrice&sortOrder=true&_memoryInMB_min=4&_memoryInMB_max=16&filter=Standard_F.%2B_v2&timeoption=month&columns=name%2CnumberOfCores%2CmemoryInMB%2CresourceDiskSizeInMB%2ClinuxPrice%2CwindowsPrice%2C__alternativevms%2C__savingsOptions%2CbestPriceRegion
+# NB VM flavor Standard_F2s_v2 is 2 vCPU,  4 GB RAM. 16 GB Temp Disk. €0.0908/hour.  €66.25/month.
+# NB VM flavor Standard_F4s_v2 is 4 vCPU,  8 GB RAM. 32 GB Temp Disk. €0.1815/hour. €132.49/month.
+# NB VM flavor Standard_F8s_v2 is 8 vCPU, 16 GB RAM. 64 GB Temp Disk. €0.3630/hour. €264.98/month.
+# NB you can list the available images using az cli as:
+#     az vm image list --location northeurope --publisher Canonical --offer 0001-com-ubuntu-server-jammy --sku 22_04-lts-gen2 --output table
+# NB instead of the latest image version we can use a specific version, e.g.,
+#     Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:22.04.202206040.
+./garm-cli pool create \
+  --enabled true \
+  --min-idle-runners 0 \
+  --max-runners 2 \
+  --tags garm-org-azure-amd64-ubuntu-22.04 \
+  --org "$org_id" \
+  --runner-prefix rgl-garm-org \
+  --provider-name azure \
+  --os-arch amd64 \
+  --os-type linux \
+  --flavor Standard_F2s_v2 \
+  --image Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest \
+  --extra-specs '{
+    "storage_account_type": "StandardSSD_LRS",
+    "disk_size_gb": 127
+  }'
+org_pool_id="$(./garm-cli pool list --org="$org_id" | perl -F'\s*\|\s*' -lane 'print $F[1] if $F[1] =~ /^[a-f0-9\-]{36}$/')"
+./garm-cli pool update \
+  --min-idle-runners 1 \
+  --max-runners 3 \
+  "$org_pool_id"
+```
+
 Finally, when you are done with this, destroy the entire example.
 
 Start by destroying the runners, then the pools, then the infrastructure:
 
 ```bash
 ./garm-cli pool update --min-idle-runners 0 "$pool_id"
+./garm-cli pool update --min-idle-runners 0 "$org_pool_id"
 # NB before continuing, go into azure and ensure there are no rgl-garm- prefixed
 #    resource groups, those should have (or are still) been deleted by garm. be
 #    patient, as it can take several minutes to finish.
 ./garm-cli runner list --all
+./garm-cli pool list --all
 ./garm-cli pool delete "$pool_id"
+./garm-cli pool delete "$org_pool_id"
 ./garm-cli repo list
 ./garm-cli repo delete "$repo_id"
+./garm-cli org list
+./garm-cli org delete "$org_id"
 terraform destroy
 ./garm-cli profile delete garm
 ```
