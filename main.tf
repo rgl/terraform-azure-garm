@@ -87,10 +87,25 @@ resource "azurerm_resource_group" "garm" {
   location = var.location
 }
 
-resource "azurerm_role_assignment" "garm" {
+resource "azurerm_user_assigned_identity" "garm" {
+  name                = "garm"
+  location            = azurerm_resource_group.garm.location
+  resource_group_name = azurerm_resource_group.garm.name
+}
+
+resource "azurerm_role_assignment" "garm_subscription" {
+  principal_id         = azurerm_user_assigned_identity.garm.principal_id
   scope                = data.azurerm_subscription.current.id
-  principal_id         = azurerm_container_group.garm.identity[0].principal_id
   role_definition_name = "Contributor"
+}
+
+# NB this assignment is moot because the garm_subscription uses the Contributor
+#    role (a superset of AcrPull). but its here to be explicit; maybe, in the
+#    future, we can lower the garm_subscription permissions.
+resource "azurerm_role_assignment" "garm_acr" {
+  principal_id         = azurerm_user_assigned_identity.garm.principal_id
+  scope                = azurerm_container_registry.garm.id
+  role_definition_name = "AcrPull"
 }
 
 resource "azurerm_storage_account" "garm" {
@@ -133,7 +148,8 @@ resource "azurerm_container_group" "garm" {
   os_type             = "Linux"
 
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.garm.id]
   }
 
   diagnostics {
@@ -145,7 +161,7 @@ resource "azurerm_container_group" "garm" {
 
   container {
     name   = "caddy"
-    image  = "caddy:2.9.1" # see https://hub.docker.com/_/caddy
+    image  = local.images["caddy"]
     cpu    = "0.5"
     memory = "0.2"
 
@@ -191,7 +207,7 @@ resource "azurerm_container_group" "garm" {
 
   container {
     name   = "garm"
-    image  = "ghcr.io/cloudbase/garm:v0.1.5" # see https://github.com/cloudbase/garm/pkgs/container/garm
+    image  = local.images["garm"]
     cpu    = "0.5"
     memory = "1.0"
 
@@ -271,4 +287,14 @@ resource "azurerm_container_group" "garm" {
       }
     }
   }
+
+  image_registry_credential {
+    server                    = azurerm_container_registry.garm.login_server
+    user_assigned_identity_id = azurerm_user_assigned_identity.garm.id
+  }
+
+  depends_on = [
+    terraform_data.acr_image["caddy"],
+    terraform_data.acr_image["garm"],
+  ]
 }
