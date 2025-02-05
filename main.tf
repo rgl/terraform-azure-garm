@@ -155,6 +155,10 @@ resource "azurerm_container_group" "garm" {
       mount_path = "/etc/caddy"
       secret = {
         "Caddyfile" = base64encode(<<-EOF
+          {
+            auto_https disable_redirects
+          }
+
           ${local.dns_name_label}.${replace(lower(azurerm_resource_group.garm.location), "/ /", "")}.azurecontainer.io {
             log
             reverse_proxy localhost:8080
