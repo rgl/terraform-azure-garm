@@ -7,11 +7,17 @@ locals {
       # renovate: datasource=docker depName=library/caddy
       tag = "2.9.1"
     }
-    # see https://github.com/cloudbase/garm/pkgs/container/garm
+    # # see https://github.com/cloudbase/garm/pkgs/container/garm
+    # garm = {
+    #   name = "ghcr.io/cloudbase/garm"
+    #   # renovate: datasource=docker depName=cloudbase/garm registryUrl=https://ghcr.io
+    #   tag = "v0.1.5"
+    # }
+    # see https://github.com/rgl/garm-tmp-ctr-img/pkgs/container/garm-tmp-ctr-img
     garm = {
-      name = "ghcr.io/cloudbase/garm"
-      # renovate: datasource=docker depName=cloudbase/garm registryUrl=https://ghcr.io
-      tag = "v0.1.5"
+      name = "ghcr.io/rgl/garm-tmp-ctr-img"
+      # renovate: datasource=docker depName=rgl/garm-tmp-ctr-img registryUrl=https://ghcr.io
+      tag = "0.0.202502091308"
     }
   }
   images = {
