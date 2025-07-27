@@ -373,6 +373,12 @@ terraform destroy
 ./garm-cli profile delete garm
 ```
 
+List this repository dependencies (and which have newer versions):
+
+```bash
+GITHUB_COM_TOKEN='YOUR_GITHUB_PERSONAL_TOKEN' ./renovate.sh
+```
+
 ## Caveats
 
 * [There is no way to known the end-user client IP address](https://feedback.azure.com/d365community/idea/c81db3f3-0c25-ec11-b6e6-000d3a4f0858).

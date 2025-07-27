@@ -1,3 +1,4 @@
+tmp/
 terraform-azure-garm-example-repository/
 .vagrant/
 .terraform/
