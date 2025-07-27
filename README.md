@@ -159,7 +159,7 @@ Provision the azure infrastructure:
 cd /vagrant
 export CHECKPOINT_DISABLE=1
 export TF_LOG=TRACE
-export TF_LOG_PATH=terraform.log
+export TF_LOG_PATH="$PWD/terraform.log"
 rm -f "$TF_LOG_PATH"
 terraform init
 terraform plan -out=tfplan
@@ -184,10 +184,13 @@ Initialize garm:
 ```bash
 # NB this creates the ~/.local/share/garm-cli/config.toml file.
 # see https://github.com/cloudbase/garm/blob/main/doc/quickstart.md#initializing-garm
-wget -q https://github.com/cloudbase/garm/releases/download/v0.1.5/garm-cli-linux-amd64.tgz
-tar xvf garm-cli-linux-amd64.tgz
+# see https://github.com/cloudbase/garm/releases
+# renovate: datasource=github-releases depName=cloudbase/garm
+garm_version="0.1.6"
+rm -f garm-cli-linux-amd64.tgz garm-cli
+wget -q "https://github.com/cloudbase/garm/releases/download/v$garm_version/garm-cli-linux-amd64.tgz"
+tar xvf garm-cli-linux-amd64.tgz garm-cli
 rm garm-cli-linux-amd64.tgz
-chmod +x garm-cli
 ./garm-cli profile delete garm # NB only required when garm was initialized in a previous test.
 garm_admin_password="$(tr -dc 'A-Za-z0-9@#$%^&*()-_=+[]{}|;:,.<>?' < /dev/urandom | head -c 24)"
 ./garm-cli init \
@@ -204,7 +207,7 @@ Add a user GitHub Personal Access Token (PAT):
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.5/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.6/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:repo_hook and repo scopes.
 github_token="ghp_replace-with-the-rest-of-your-github-token"
 ./garm-cli github credentials add \
@@ -225,8 +228,11 @@ repo_name='terraform-azure-garm-example-repository'
   --name "$repo_name" \
   --install-webhook \
   --random-webhook-secret
-# TODO simplify the repo_id extraction depending on the outcome of https://github.com/cloudbase/garm/issues/292.
-repo_id="$(./garm-cli repo list | REPO_NAME="$repo_name" perl -F'\s*\|\s*' -lane 'print $F[1] if $F[3] eq $ENV{REPO_NAME}')"
+repo_id="$(./garm-cli repo list --format json \
+  | jq -r \
+    --arg owner rgl \
+    --arg name "$repo_name" \
+    '.[] | select(.owner == $owner and .name == $name) | .id')"
 ```
 
 Add a organization GitHub Personal Access Token (PAT), in these examples, we
@@ -236,7 +242,7 @@ use the `rgl-example` organization:
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.5/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.6/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:org, admin:org_hook, admin:repo_hook and repo scopes.
 org_github_token="ghp_replace-with-the-rest-of-your-organization-github-token"
 ./garm-cli github credentials add \
@@ -256,8 +262,10 @@ org_name='rgl-example'
   --name "$org_name" \
   --install-webhook \
   --random-webhook-secret
-# TODO simplify the org_id extraction depending on the outcome of https://github.com/cloudbase/garm/issues/292.
-org_id="$(./garm-cli org list | ORG_NAME="$org_name" perl -F'\s*\|\s*' -lane 'print $F[1] if $F[2] eq $ENV{ORG_NAME}')"
+org_id="$(./garm-cli org list --format json \
+  | jq -r \
+    --arg name "$org_name" \
+    '.[] | select(.name == $name) | .id')"
 ```
 
 Create a Ubuntu (runner) pool associated with a GitHub repository:
@@ -294,11 +302,12 @@ Create a Ubuntu (runner) pool associated with a GitHub repository:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-pool_id="$(./garm-cli pool list "--repo=$repo_id" | perl -F'\s*\|\s*' -lane 'print $F[1] if $F[1] =~ /^[a-f0-9\-]{36}$/')"
+pool_id="$(./garm-cli pool list "--repo=$repo_id" --format json | jq -r '.[] | .id')"
 ./garm-cli pool update \
   --min-idle-runners 1 \
   --max-runners 3 \
   "$pool_id"
+./garm-cli runner list "$pool_id"
 ```
 
 Go to the example repository and manually run the build workflow, e.g., click
@@ -344,12 +353,22 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-org_pool_id="$(./garm-cli pool list --org="$org_id" | perl -F'\s*\|\s*' -lane 'print $F[1] if $F[1] =~ /^[a-f0-9\-]{36}$/')"
+org_pool_id="$(./garm-cli pool list "--org=$org_id" --format json | jq -r '.[] | .id')"
 ./garm-cli pool update \
   --min-idle-runners 1 \
   --max-runners 3 \
   "$org_pool_id"
+./garm-cli runner list "$org_pool_id"
 ```
+
+Go to the example repository and manually run the build workflow, e.g., click
+the "Run workflow" button at:
+
+https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml
+
+Then go into the Azure Portal, and observe the resources being created, and deleted.
+
+You should also fiddle with the `--min-idle-runners` setting as exemplified above.
 
 Finally, when you are done with this, destroy the entire example.
 
@@ -365,10 +384,13 @@ Start by destroying the runners, then the pools, then the infrastructure:
 ./garm-cli pool list --all
 ./garm-cli pool delete "$pool_id"
 ./garm-cli pool delete "$org_pool_id"
+./garm-cli pool list --all
 ./garm-cli repo list
 ./garm-cli repo delete "$repo_id"
+./garm-cli repo list
 ./garm-cli org list
 ./garm-cli org delete "$org_id"
+./garm-cli org list
 terraform destroy
 ./garm-cli profile delete garm
 ```

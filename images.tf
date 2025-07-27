@@ -5,13 +5,13 @@ locals {
     caddy = {
       name = "docker.io/library/caddy"
       # renovate: datasource=docker depName=library/caddy
-      tag = "2.9.1"
+      tag = "2.10.0"
     }
     # see https://github.com/cloudbase/garm/pkgs/container/garm
     garm = {
       name = "ghcr.io/cloudbase/garm"
       # renovate: datasource=docker depName=cloudbase/garm registryUrl=https://ghcr.io
-      tag = "v0.1.5"
+      tag = "v0.1.6"
     }
   }
   images = {

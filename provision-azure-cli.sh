@@ -2,7 +2,9 @@
 set -euxo pipefail
 
 # NB execute apt-cache madison azure-cli to known the available versions.
-azure_cli_version='2.68.0'
+# see https://github.com/Azure/azure-cli/releases
+# renovate: datasource=github-releases depName=Azure/azure-cli extractVersion=azure-cli-(?<version>.+)
+azure_cli_version='2.75.0'
 
 # install dependencies.
 apt-get install -y apt-transport-https gnupg

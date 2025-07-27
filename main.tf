@@ -1,12 +1,12 @@
 # see https://github.com/hashicorp/terraform
 terraform {
-  required_version = "1.10.5"
+  required_version = "1.12.2"
   required_providers {
     # see https://github.com/hashicorp/terraform-provider-random
     # see https://registry.terraform.io/providers/hashicorp/random
     random = {
       source  = "hashicorp/random"
-      version = "3.6.3"
+      version = "3.7.2"
     }
     # see https://github.com/Tobotimus/terraform-provider-toml
     # see https://registry.terraform.io/providers/Tobotimus/toml
@@ -18,7 +18,7 @@ terraform {
     # see https://registry.terraform.io/providers/hashicorp/azurerm
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.16.0"
+      version = "4.37.0"
     }
   }
 }
@@ -216,7 +216,7 @@ resource "azurerm_container_group" "garm" {
       read_only  = true
       mount_path = "/etc/garm"
       secret = {
-        # see https://github.com/cloudbase/garm/blob/v0.1.5/doc/config.md
+        # see https://github.com/cloudbase/garm/blob/v0.1.6/doc/config.md
         "config.toml" = base64encode(<<-EOF
           [default]
           enable_webhook_management = true
@@ -275,16 +275,6 @@ resource "azurerm_container_group" "garm" {
       share_name           = azurerm_storage_share.garm_garm_data.name
       storage_account_name = azurerm_storage_account.garm.name
       storage_account_key  = azurerm_storage_account.garm.primary_access_key
-    }
-
-    # TODO drop this depending on the outcome of https://github.com/cloudbase/garm/discussions/290.
-    volume {
-      name       = "garm-certs"
-      read_only  = true
-      mount_path = "/etc/ssl/certs"
-      secret = {
-        "ca-certificates.crt" = base64encode(file("/etc/ssl/certs/ca-certificates.crt"))
-      }
     }
   }
 
