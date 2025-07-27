@@ -59,6 +59,7 @@ case "$ACR_IMAGE_COMMAND" in
   copy)
     crane copy \
       --allow-nondistributable-artifacts \
+      --platform=linux/amd64 \
       "$source_image" \
       "$target_image"
     ;;
