@@ -39,6 +39,8 @@ jobs:
     name: Build
     runs-on: garm-azure-amd64-ubuntu-22.04
     steps:
+      - name: user
+        run: id
       - uses: actions/checkout@v4
       - name: linux
         run: uname -a
@@ -74,12 +76,13 @@ git push
 popd
 ```
 
-Repeat the process, but in the context of the `rgl-example` organization:
+Repeat the process, but in the context of the `rgl-example` organization,
+using the Ubuntu runner:
 
 ```bash
-# see https://github.com/rgl-example/terraform-azure-garm-org-example-repository
-git clone git@github.com:rgl-example/terraform-azure-garm-org-example-repository.git
-pushd terraform-azure-garm-org-example-repository
+# see https://github.com/rgl-example/terraform-azure-garm-org-example-ubuntu-repository
+git clone git@github.com:rgl-example/terraform-azure-garm-org-example-ubuntu-repository.git
+pushd terraform-azure-garm-org-example-ubuntu-repository
 install -d .github/workflows
 cat >.github/workflows/build.yml <<'EOF'
 name: build
@@ -91,6 +94,8 @@ jobs:
     name: Build
     runs-on: garm-org-azure-amd64-ubuntu-22.04
     steps:
+      - name: user
+        run: id
       - uses: actions/checkout@v4
       - name: linux
         run: uname -a
@@ -118,7 +123,53 @@ EOF
 cat >README.md <<'EOF'
 # About
 
-[![build](https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml)
+[![build](https://github.com/rgl-example/terraform-azure-garm-org-example-ubuntu-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl-example/terraform-azure-garm-org-example-ubuntu-repository/actions/workflows/build.yml)
+EOF
+git add .
+git commit -m init
+git push
+popd
+```
+
+Repeat the process, but in the context of the `rgl-example` organization,
+using the Windows runner:
+
+```bash
+# see https://github.com/rgl-example/terraform-azure-garm-org-example-windows-repository
+git clone git@github.com:rgl-example/terraform-azure-garm-org-example-windows-repository.git
+pushd terraform-azure-garm-org-example-windows-repository
+install -d .github/workflows
+cat >.github/workflows/build.yml <<'EOF'
+name: build
+on:
+  - push
+  - workflow_dispatch
+jobs:
+  build:
+    name: Build
+    runs-on: garm-org-azure-amd64-windows-2022
+    steps:
+      - name: user
+        run: whoami.exe /all
+      - name: install git
+        # NB this is required by actions/checkout action.
+        # NB this should probably be in the base runner image.
+        run: |
+          Invoke-WebRequest `
+            -Uri https://github.com/git-for-windows/git/releases/download/v2.50.1.windows.1/MinGit-2.50.1-64-bit.zip `
+            -OutFile git.zip
+          mkdir -Force c:\git | Out-Null
+          Expand-Archive git.zip c:\git
+          Remove-Item git.zip
+          Add-Content -Encoding utf8 $env:GITHUB_PATH c:\git\cmd
+      - uses: actions/checkout@v4
+      - name: windows
+        run: (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name ProductName).ProductName
+EOF
+cat >README.md <<'EOF'
+# About
+
+[![build](https://github.com/rgl-example/terraform-azure-garm-org-example-windows-repository/actions/workflows/build.yml/badge.svg)](https://github.com/rgl-example/terraform-azure-garm-org-example-windows-repository/actions/workflows/build.yml)
 EOF
 git add .
 git commit -m init
@@ -339,11 +390,11 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
 #     Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:22.04.202206040.
 ./garm-cli pool create \
   --enabled true \
+  --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
   --tags garm-org-azure-amd64-ubuntu-22.04 \
-  --org "$org_id" \
-  --runner-prefix rgl-garm-org \
+  --runner-prefix rgl-garm-ubuntu-org \
   --provider-name azure \
   --os-arch amd64 \
   --os-type linux \
@@ -353,18 +404,80 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-org_pool_id="$(./garm-cli pool list "--org=$org_id" --format json | jq -r '.[] | .id')"
+org_ubuntu_pool_id="$(./garm-cli pool list "--org=$org_id" --format json \
+  | jq -r \
+    --arg runner_prefix rgl-garm-ubuntu-org \
+    '.[] | select(.runner_prefix == $runner_prefix) | .id')"
 ./garm-cli pool update \
   --min-idle-runners 1 \
   --max-runners 3 \
-  "$org_pool_id"
-./garm-cli runner list "$org_pool_id"
+  "$org_ubuntu_pool_id"
+./garm-cli runner list "$org_ubuntu_pool_id"
 ```
 
 Go to the example repository and manually run the build workflow, e.g., click
 the "Run workflow" button at:
 
-https://github.com/rgl-example/terraform-azure-garm-org-example-repository/actions/workflows/build.yml
+https://github.com/rgl-example/terraform-azure-garm-org-example-ubuntu-repository/actions/workflows/build.yml
+
+Then go into the Azure Portal, and observe the resources being created, and deleted.
+
+You should also fiddle with the `--min-idle-runners` setting as exemplified above.
+
+Create a Windows (runner) pool associated with a GitHub organization:
+
+```bash
+# NB for each github action job run, garm will create a vm (and related azure
+#    resources) in a new (and ephemeral) azure resource group with the prefix
+#    set with --runner-prefix, e.g., --runner-prefix rgl-garm, will create a
+#    resource group named rgl-garm-r2BxRNWHNSV4.
+# NB while I was testing this, each fresh runner took about 4m20s to execute the
+#    example build job. when there was an idle runner available, it took about
+#    1m25s.
+# NB see prices at https://cloudprice.net/?region=francecentral&currency=EUR&sortField=windowsPrice&sortOrder=true&_memoryInMB_min=4&_memoryInMB_max=16&filter=Standard_F.%2B_v2&timeoption=month&columns=name%2CnumberOfCores%2CmemoryInMB%2CresourceDiskSizeInMB%2ClinuxPrice%2CwindowsPrice%2C__alternativevms%2C__savingsOptions%2CbestPriceRegion
+# NB VM flavor Standard_F2s_v2 is 2 vCPU,  4 GB RAM. 16 GB Temp Disk. €0.0908/hour.  €66.25/month.
+# NB VM flavor Standard_F4s_v2 is 4 vCPU,  8 GB RAM. 32 GB Temp Disk. €0.1815/hour. €132.49/month.
+# NB VM flavor Standard_F8s_v2 is 8 vCPU, 16 GB RAM. 64 GB Temp Disk. €0.3630/hour. €264.98/month.
+# NB you can browse the available images at:
+#     https://az-vm-image.info/?cmd=--publisher+MicrosoftWindowsServer
+# NB you can use one the images:
+#     MicrosoftWindowsServer:WindowsServer:2022-Datacenter:latest
+#     MicrosoftWindowsServer:WindowsServer:2022-datacenter-azure-edition-core:latest
+# NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.6/cloudconfig/templates.go#L207
+./garm-cli pool create \
+  --enabled true \
+  --org "$org_id" \
+  --min-idle-runners 0 \
+  --max-runners 2 \
+  --tags garm-org-azure-amd64-windows-2022 \
+  --runner-prefix rgl-garm-windows-org \
+  --provider-name azure \
+  --os-arch amd64 \
+  --os-type windows \
+  --flavor Standard_F2s_v2 \
+  --image MicrosoftWindowsServer:WindowsServer:2022-Datacenter:latest \
+  --extra-specs '{
+    "storage_account_type": "StandardSSD_LRS",
+    "disk_size_gb": 127
+  }'
+org_windows_pool_id="$(./garm-cli pool list "--org=$org_id" --format json \
+  | jq -r \
+    --arg runner_prefix rgl-garm-windows-org \
+    '.[] | select(.runner_prefix == $runner_prefix) | .id')"
+./garm-cli pool update \
+  --min-idle-runners 1 \
+  --max-runners 3 \
+  "$org_windows_pool_id"
+./garm-cli runner list "$org_windows_pool_id"
+runner_name="$(./garm-cli runner list "$org_windows_pool_id" --format json \
+  | jq -r 'sort_by(.created_at) | last.name')"
+./garm-cli runner show "$runner_name"
+```
+
+Go to the example repository and manually run the build workflow, e.g., click
+the "Run workflow" button at:
+
+https://github.com/rgl-example/terraform-azure-garm-org-example-windows-repository/actions/workflows/build.yml
 
 Then go into the Azure Portal, and observe the resources being created, and deleted.
 
@@ -376,14 +489,16 @@ Start by destroying the runners, then the pools, then the infrastructure:
 
 ```bash
 ./garm-cli pool update --min-idle-runners 0 "$pool_id"
-./garm-cli pool update --min-idle-runners 0 "$org_pool_id"
+./garm-cli pool update --min-idle-runners 0 "$org_ubuntu_pool_id"
+./garm-cli pool update --min-idle-runners 0 "$org_windows_pool_id"
 # NB before continuing, go into azure and ensure there are no rgl-garm- prefixed
 #    resource groups, those should have (or are still) been deleted by garm. be
 #    patient, as it can take several minutes to finish.
 ./garm-cli runner list --all
 ./garm-cli pool list --all
 ./garm-cli pool delete "$pool_id"
-./garm-cli pool delete "$org_pool_id"
+./garm-cli pool delete "$org_ubuntu_pool_id"
+./garm-cli pool delete "$org_windows_pool_id"
 ./garm-cli pool list --all
 ./garm-cli repo list
 ./garm-cli repo delete "$repo_id"
