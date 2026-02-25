@@ -1,5 +1,5 @@
 Vagrant.configure(2) do |config|
-  config.vm.box = 'ubuntu-22.04-amd64'
+  config.vm.box = 'ubuntu-24.04-uefi-amd64'
 
   # NB this is needed because terraform/providers do not
   #    work over the /vagrant network shared directory.
@@ -30,6 +30,7 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.provision :shell, path: 'provision-base.sh'
+  config.vm.provision :shell, path: 'provision-crane.sh'
   config.vm.provision :shell, path: 'provision-azure-cli.sh'
   config.vm.provision :shell, path: 'provision-terraform.sh'
 end

@@ -1,12 +1,12 @@
 # see https://github.com/hashicorp/terraform
 terraform {
-  required_version = "1.12.2"
+  required_version = "1.14.5"
   required_providers {
     # see https://github.com/hashicorp/terraform-provider-random
     # see https://registry.terraform.io/providers/hashicorp/random
     random = {
       source  = "hashicorp/random"
-      version = "3.7.2"
+      version = "3.8.1"
     }
     # see https://github.com/Tobotimus/terraform-provider-toml
     # see https://registry.terraform.io/providers/Tobotimus/toml
@@ -216,7 +216,7 @@ resource "azurerm_container_group" "garm" {
       read_only  = true
       mount_path = "/etc/garm"
       secret = {
-        # see https://github.com/cloudbase/garm/blob/v0.1.6/doc/config.md
+        # see https://github.com/cloudbase/garm/blob/v0.1.7/doc/config.md
         "config.toml" = base64encode(<<-EOF
           [default]
           enable_webhook_management = true

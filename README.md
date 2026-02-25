@@ -37,7 +37,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: garm-azure-amd64-ubuntu-22.04
+    runs-on: garm-azure-amd64-ubuntu-24.04
     steps:
       - name: user
         run: id
@@ -92,7 +92,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: garm-org-azure-amd64-ubuntu-22.04
+    runs-on: garm-org-azure-amd64-ubuntu-24.04
     steps:
       - name: user
         run: id
@@ -156,7 +156,7 @@ jobs:
         # NB this should probably be in the base runner image.
         run: |
           Invoke-WebRequest `
-            -Uri https://github.com/git-for-windows/git/releases/download/v2.50.1.windows.1/MinGit-2.50.1-64-bit.zip `
+            -Uri https://github.com/git-for-windows/git/releases/download/v2.53.0.windows.1/MinGit-2.53.0-64-bit.zip `
             -OutFile git.zip
           mkdir -Force c:\git | Out-Null
           Expand-Archive git.zip c:\git
@@ -237,7 +237,7 @@ Initialize garm:
 # see https://github.com/cloudbase/garm/blob/main/doc/quickstart.md#initializing-garm
 # see https://github.com/cloudbase/garm/releases
 # renovate: datasource=github-releases depName=cloudbase/garm
-garm_version="0.1.6"
+garm_version="0.1.7"
 rm -f garm-cli-linux-amd64.tgz garm-cli
 wget -q "https://github.com/cloudbase/garm/releases/download/v$garm_version/garm-cli-linux-amd64.tgz"
 tar xvf garm-cli-linux-amd64.tgz garm-cli
@@ -258,7 +258,7 @@ Add a user GitHub Personal Access Token (PAT):
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.6/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.7/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:repo_hook and repo scopes.
 github_token="ghp_replace-with-the-rest-of-your-github-token"
 ./garm-cli github credentials add \
@@ -293,7 +293,7 @@ use the `rgl-example` organization:
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.6/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.7/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:org, admin:org_hook, admin:repo_hook and repo scopes.
 org_github_token="ghp_replace-with-the-rest-of-your-organization-github-token"
 ./garm-cli github credentials add \
@@ -334,21 +334,22 @@ Create a Ubuntu (runner) pool associated with a GitHub repository:
 # NB VM flavor Standard_F4s_v2 is 4 vCPU,  8 GB RAM. 32 GB Temp Disk. €0.1815/hour. €132.49/month.
 # NB VM flavor Standard_F8s_v2 is 8 vCPU, 16 GB RAM. 64 GB Temp Disk. €0.3630/hour. €264.98/month.
 # NB you can list the available images using az cli as:
-#     az vm image list --location northeurope --publisher Canonical --offer 0001-com-ubuntu-server-jammy --sku 22_04-lts-gen2 --output table
+#     az vm image list --location northeurope --publisher Canonical --output table --all >canonical-images.txt
+#     az vm image list --location northeurope --publisher Canonical --offer ubuntu-24_04-lts --sku server --output table
 # NB instead of the latest image version we can use a specific version, e.g.,
-#     Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:22.04.202206040.
+#     Canonical:ubuntu-24_04-lts:server:24.04.202601300
 ./garm-cli pool create \
   --enabled true \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags garm-azure-amd64-ubuntu-22.04 \
+  --tags garm-azure-amd64-ubuntu-24.04 \
   --repo "$repo_id" \
   --runner-prefix rgl-garm \
   --provider-name azure \
   --os-arch amd64 \
   --os-type linux \
   --flavor Standard_F2s_v2 \
-  --image Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest \
+  --image Canonical:ubuntu-24_04-lts:server:latest \
   --extra-specs '{
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
@@ -359,6 +360,9 @@ pool_id="$(./garm-cli pool list "--repo=$repo_id" --format json | jq -r '.[] | .
   --max-runners 3 \
   "$pool_id"
 ./garm-cli runner list "$pool_id"
+runner_name="$(./garm-cli runner list "$pool_id" --format json \
+  | jq -r 'sort_by(.created_at) | last.name')"
+./garm-cli runner show "$runner_name"
 ```
 
 Go to the example repository and manually run the build workflow, e.g., click
@@ -385,21 +389,22 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
 # NB VM flavor Standard_F4s_v2 is 4 vCPU,  8 GB RAM. 32 GB Temp Disk. €0.1815/hour. €132.49/month.
 # NB VM flavor Standard_F8s_v2 is 8 vCPU, 16 GB RAM. 64 GB Temp Disk. €0.3630/hour. €264.98/month.
 # NB you can list the available images using az cli as:
-#     az vm image list --location northeurope --publisher Canonical --offer 0001-com-ubuntu-server-jammy --sku 22_04-lts-gen2 --output table
+#     az vm image list --location northeurope --publisher Canonical --output table --all >canonical-images.txt
+#     az vm image list --location northeurope --publisher Canonical --offer ubuntu-24_04-lts --sku server --output table
 # NB instead of the latest image version we can use a specific version, e.g.,
-#     Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:22.04.202206040.
+#     Canonical:ubuntu-24_04-lts:server:24.04.202601300
 ./garm-cli pool create \
   --enabled true \
   --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags garm-org-azure-amd64-ubuntu-22.04 \
+  --tags garm-org-azure-amd64-ubuntu-24.04 \
   --runner-prefix rgl-garm-ubuntu-org \
   --provider-name azure \
   --os-arch amd64 \
   --os-type linux \
   --flavor Standard_F2s_v2 \
-  --image Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest \
+  --image Canonical:ubuntu-24_04-lts:server:latest \
   --extra-specs '{
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
@@ -413,6 +418,9 @@ org_ubuntu_pool_id="$(./garm-cli pool list "--org=$org_id" --format json \
   --max-runners 3 \
   "$org_ubuntu_pool_id"
 ./garm-cli runner list "$org_ubuntu_pool_id"
+runner_name="$(./garm-cli runner list "$org_ubuntu_pool_id" --format json \
+  | jq -r 'sort_by(.created_at) | last.name')"
+./garm-cli runner show "$runner_name"
 ```
 
 Go to the example repository and manually run the build workflow, e.g., click
@@ -443,7 +451,7 @@ Create a Windows (runner) pool associated with a GitHub organization:
 # NB you can use one the images:
 #     MicrosoftWindowsServer:WindowsServer:2022-Datacenter:latest
 #     MicrosoftWindowsServer:WindowsServer:2022-datacenter-azure-edition-core:latest
-# NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.6/cloudconfig/templates.go#L207
+# NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.7/cloudconfig/templates.go#L207
 ./garm-cli pool create \
   --enabled true \
   --org "$org_id" \
