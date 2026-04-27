@@ -216,7 +216,7 @@ resource "azurerm_container_group" "garm" {
       read_only  = true
       mount_path = "/etc/garm"
       secret = {
-        # see https://github.com/cloudbase/garm/blob/v0.1.8/doc/config.md
+        # see https://github.com/cloudbase/garm/blob/v0.2.0/doc/configuration.md
         "config.toml" = base64encode(<<-EOF
           [default]
           enable_webhook_management = true

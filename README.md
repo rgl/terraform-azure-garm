@@ -239,7 +239,7 @@ Initialize garm:
 # see https://github.com/cloudbase/garm/blob/main/doc/quickstart.md#initializing-garm
 # see https://github.com/cloudbase/garm/releases
 # renovate: datasource=github-releases depName=cloudbase/garm
-garm_version="0.1.8"
+garm_version="0.2.0"
 rm -f garm-cli-linux-amd64.tgz garm-cli
 wget -q "https://github.com/cloudbase/garm/releases/download/v$garm_version/garm-cli-linux-amd64.tgz"
 tar xvf garm-cli-linux-amd64.tgz garm-cli
@@ -267,7 +267,7 @@ Add a user GitHub Personal Access Token (PAT):
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.8/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.2.0/doc/credentials.md#github-permissions
 #    the pat should end up with the admin:repo_hook and repo scopes.
 github_token="ghp_replace-with-the-rest-of-your-github-token"
 ./garm-cli github credentials add \
@@ -302,7 +302,7 @@ use the `rgl-example` organization:
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.8/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.2.0/doc/credentials.md#github-permissions
 #    the pat should end up with the admin:org, admin:org_hook, admin:repo_hook and repo scopes.
 org_github_token="ghp_replace-with-the-rest-of-your-organization-github-token"
 ./garm-cli github credentials add \
@@ -512,18 +512,19 @@ Start by destroying the runners, then the pools, then the infrastructure:
 # NB before continuing, go into azure and ensure there are no rgl-garm- prefixed
 #    resource groups, those should have (or are still) been deleted by garm. be
 #    patient, as it can take several minutes to finish.
-./garm-cli runner list --all
-./garm-cli pool list --all
+./garm-cli runner list
+./garm-cli pool list
 ./garm-cli pool delete "$pool_id"
 ./garm-cli pool delete "$org_ubuntu_pool_id"
 ./garm-cli pool delete "$org_windows_pool_id"
-./garm-cli pool list --all
+./garm-cli pool list
 ./garm-cli repo list
 ./garm-cli repo delete "$repo_id"
 ./garm-cli repo list
 ./garm-cli org list
 ./garm-cli org delete "$org_id"
 ./garm-cli org list
+./garm-cli github credentials list
 terraform destroy
 ./garm-cli profile delete garm
 ```
@@ -541,6 +542,8 @@ GITHUB_COM_TOKEN='YOUR_GITHUB_PERSONAL_TOKEN' ./renovate.sh
 
 ## Reference
 
+* [GitHub Actions Runner Manager (GARM)](https://github.com/cloudbase/garm)
+* [GARM External Provider For Azure](https://github.com/cloudbase/garm-provider-azure)
 * [azurerm_container_group](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_group)
 * [Container groups in Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-container-groups)
 * [YAML reference: Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-reference-yaml)

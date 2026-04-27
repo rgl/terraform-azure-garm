@@ -11,7 +11,7 @@ locals {
     garm = {
       name = "ghcr.io/cloudbase/garm"
       # renovate: datasource=docker depName=cloudbase/garm registryUrl=https://ghcr.io
-      tag = "v0.1.8"
+      tag = "v0.2.0"
     }
   }
   images = {
