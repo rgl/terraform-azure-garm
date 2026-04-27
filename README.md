@@ -218,7 +218,9 @@ terraform plan -out=tfplan
 time terraform apply tfplan
 ```
 
-In a different shell, show the garm logs:
+In a different shell, show the garm logs from the azure container logs:
+
+**NB** Alternatively, once garm is initialized, you can use `garm-cli debug-log`.
 
 ```bash
 export ARM_SUBSCRIPTION_ID="<YOUR-SUBSCRIPTION-ID>"
@@ -250,6 +252,13 @@ garm_admin_password="$(tr -dc 'A-Za-z0-9@#$%^&*()-_=+[]{}|;:,.<>?' < /dev/urando
   --username admin \
   --email admin@example.com \
   --password "$garm_admin_password"
+```
+
+In a different shell, show the garm logs:
+
+```bash
+cd /vagrant
+./garm-cli debug-log
 ```
 
 Add a user GitHub Personal Access Token (PAT):
