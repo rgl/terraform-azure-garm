@@ -261,6 +261,23 @@ cd /vagrant
 ./garm-cli debug-log
 ```
 
+Access the GARM Web UI:
+
+```bash
+cat <<EOF
+
+Using your Web Browser, open the Web UI at:
+
+$(terraform output -raw url)/ui/
+
+And login as:
+
+Username: admin
+Password: $garm_admin_password
+
+EOF
+```
+
 Add a user GitHub Personal Access Token (PAT):
 
 ```bash

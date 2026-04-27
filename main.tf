@@ -240,6 +240,9 @@ resource "azurerm_container_group" "garm" {
           port = 8080
           use_tls = false
 
+          [apiserver.webui]
+          enable=true
+
           [database]
           backend = "sqlite3"
           passphrase = ${provider::toml::encode(random_password.garm_database_passphrase.result)}
