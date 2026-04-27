@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # see https://github.com/google/go-containerregistry/releases
 # renovate: datasource=github-releases depName=google/go-containerregistry
-version='0.21.0'
+version='0.21.5'
 
 # download and install.
 url="https://github.com/google/go-containerregistry/releases/download/v$version/go-containerregistry_Linux_x86_64.tar.gz"

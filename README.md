@@ -237,7 +237,7 @@ Initialize garm:
 # see https://github.com/cloudbase/garm/blob/main/doc/quickstart.md#initializing-garm
 # see https://github.com/cloudbase/garm/releases
 # renovate: datasource=github-releases depName=cloudbase/garm
-garm_version="0.1.7"
+garm_version="0.1.8"
 rm -f garm-cli-linux-amd64.tgz garm-cli
 wget -q "https://github.com/cloudbase/garm/releases/download/v$garm_version/garm-cli-linux-amd64.tgz"
 tar xvf garm-cli-linux-amd64.tgz garm-cli
@@ -258,7 +258,7 @@ Add a user GitHub Personal Access Token (PAT):
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.7/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.8/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:repo_hook and repo scopes.
 github_token="ghp_replace-with-the-rest-of-your-github-token"
 ./garm-cli github credentials add \
@@ -293,7 +293,7 @@ use the `rgl-example` organization:
 # NB you need to go into your github account and create a new token at
 #    https://github.com/settings/tokens. create a classic token with
 #    the permissions described at:
-#     https://github.com/cloudbase/garm/blob/v0.1.7/doc/github_credentials.md#adding-github-credentials
+#     https://github.com/cloudbase/garm/blob/v0.1.8/doc/github_credentials.md#adding-github-credentials
 #    the pat should end up with the admin:org, admin:org_hook, admin:repo_hook and repo scopes.
 org_github_token="ghp_replace-with-the-rest-of-your-organization-github-token"
 ./garm-cli github credentials add \
@@ -393,6 +393,7 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
 #     az vm image list --location northeurope --publisher Canonical --offer ubuntu-24_04-lts --sku server --output table
 # NB instead of the latest image version we can use a specific version, e.g.,
 #     Canonical:ubuntu-24_04-lts:server:24.04.202601300
+# NB see CloudConfigTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L26
 ./garm-cli pool create \
   --enabled true \
   --org "$org_id" \
@@ -451,7 +452,7 @@ Create a Windows (runner) pool associated with a GitHub organization:
 # NB you can use one the images:
 #     MicrosoftWindowsServer:WindowsServer:2022-Datacenter:latest
 #     MicrosoftWindowsServer:WindowsServer:2022-datacenter-azure-edition-core:latest
-# NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.7/cloudconfig/templates.go#L207
+# NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L216
 ./garm-cli pool create \
   --enabled true \
   --org "$org_id" \
