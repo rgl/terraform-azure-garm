@@ -300,6 +300,7 @@ Add a user GitHub repository:
 ```bash
 repo_name='terraform-azure-garm-example-repository'
 ./garm-cli repo add \
+  --agent-mode \
   --credentials rgl \
   --owner rgl \
   --name "$repo_name" \
@@ -335,6 +336,7 @@ Add a GitHub organization:
 ```bash
 org_name='rgl-example'
 ./garm-cli org add \
+  --agent-mode \
   --credentials rgl-example \
   --name "$org_name" \
   --install-webhook \
@@ -366,6 +368,7 @@ Create a Ubuntu (runner) pool associated with a GitHub repository:
 #     Canonical:ubuntu-24_04-lts:server:24.04.202601300
 ./garm-cli pool create \
   --enabled true \
+  --enable-shell \
   --min-idle-runners 0 \
   --max-runners 2 \
   --tags garm-azure-amd64-ubuntu-24.04 \
@@ -422,6 +425,7 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
 # NB see CloudConfigTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L26
 ./garm-cli pool create \
   --enabled true \
+  --enable-shell \
   --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
@@ -481,6 +485,7 @@ Create a Windows (runner) pool associated with a GitHub organization:
 # NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L216
 ./garm-cli pool create \
   --enabled true \
+  --enable-shell \
   --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
@@ -560,6 +565,7 @@ GITHUB_COM_TOKEN='YOUR_GITHUB_PERSONAL_TOKEN' ./renovate.sh
 ## Reference
 
 * [GitHub Actions Runner Manager (GARM)](https://github.com/cloudbase/garm)
+* [GitHub Actions Runner Manager Agent (GARM Agent)](https://github.com/cloudbase/garm-agent)
 * [GARM External Provider For Azure](https://github.com/cloudbase/garm-provider-azure)
 * [azurerm_container_group](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_group)
 * [Container groups in Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-container-groups)
