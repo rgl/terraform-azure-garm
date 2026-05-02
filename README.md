@@ -304,7 +304,6 @@ repo_name='terraform-azure-garm-example-repository'
   --credentials rgl \
   --owner rgl \
   --name "$repo_name" \
-  --install-webhook \
   --random-webhook-secret
 repo_id="$(./garm-cli repo list --format json \
   | jq -r \
@@ -339,7 +338,6 @@ org_name='rgl-example'
   --agent-mode \
   --credentials rgl-example \
   --name "$org_name" \
-  --install-webhook \
   --random-webhook-secret
 org_id="$(./garm-cli org list --format json \
   | jq -r \
@@ -347,7 +345,7 @@ org_id="$(./garm-cli org list --format json \
     '.[] | select(.name == $name) | .id')"
 ```
 
-Create a Ubuntu (runner) pool associated with a GitHub repository:
+Create a Ubuntu (runner) scale set associated with a GitHub repository:
 
 ```bash
 # NB for each github action job run, garm will create a vm (and related azure
@@ -366,12 +364,12 @@ Create a Ubuntu (runner) pool associated with a GitHub repository:
 #     az vm image list --location northeurope --publisher Canonical --offer ubuntu-24_04-lts --sku server --output table
 # NB instead of the latest image version we can use a specific version, e.g.,
 #     Canonical:ubuntu-24_04-lts:server:24.04.202601300
-./garm-cli pool create \
-  --enabled true \
+./garm-cli scaleset add \
+  --enabled \
   --enable-shell \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags garm-azure-amd64-ubuntu-24.04 \
+  --name garm-azure-amd64-ubuntu-24.04 \
   --repo "$repo_id" \
   --runner-prefix rgl-garm \
   --provider-name azure \
@@ -383,13 +381,13 @@ Create a Ubuntu (runner) pool associated with a GitHub repository:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-pool_id="$(./garm-cli pool list "--repo=$repo_id" --format json | jq -r '.[] | .id')"
-./garm-cli pool update \
+scaleset_id="$(./garm-cli scaleset list "--repo=$repo_id" --format json | jq -r '.[] | .id')"
+./garm-cli scaleset update \
   --min-idle-runners 1 \
   --max-runners 3 \
-  "$pool_id"
-./garm-cli runner list "$pool_id"
-runner_name="$(./garm-cli runner list "$pool_id" --format json \
+  "$scaleset_id"
+./garm-cli runner list "$scaleset_id"
+runner_name="$(./garm-cli runner list "$scaleset_id" --format json \
   | jq -r 'sort_by(.created_at) | last.name')"
 ./garm-cli runner show "$runner_name"
 ```
@@ -403,7 +401,7 @@ Then go into the Azure Portal, and observe the resources being created, and dele
 
 You should also fiddle with the `--min-idle-runners` setting as exemplified above.
 
-Create a Ubuntu (runner) pool associated with a GitHub organization:
+Create a Ubuntu (runner) scale set associated with a GitHub organization:
 
 ```bash
 # NB for each github action job run, garm will create a vm (and related azure
@@ -423,13 +421,13 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
 # NB instead of the latest image version we can use a specific version, e.g.,
 #     Canonical:ubuntu-24_04-lts:server:24.04.202601300
 # NB see CloudConfigTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L26
-./garm-cli pool create \
-  --enabled true \
+./garm-cli scaleset add \
+  --enabled \
   --enable-shell \
   --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags garm-org-azure-amd64-ubuntu-24.04 \
+  --name garm-org-azure-amd64-ubuntu-24.04 \
   --runner-prefix rgl-garm-ubuntu-org \
   --provider-name azure \
   --os-arch amd64 \
@@ -440,16 +438,16 @@ Create a Ubuntu (runner) pool associated with a GitHub organization:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-org_ubuntu_pool_id="$(./garm-cli pool list "--org=$org_id" --format json \
+org_ubuntu_scaleset_id="$(./garm-cli scaleset list "--org=$org_id" --format json \
   | jq -r \
     --arg runner_prefix rgl-garm-ubuntu-org \
     '.[] | select(.runner_prefix == $runner_prefix) | .id')"
-./garm-cli pool update \
+./garm-cli scaleset update \
   --min-idle-runners 1 \
   --max-runners 3 \
-  "$org_ubuntu_pool_id"
-./garm-cli runner list "$org_ubuntu_pool_id"
-runner_name="$(./garm-cli runner list "$org_ubuntu_pool_id" --format json \
+  "$org_ubuntu_scaleset_id"
+./garm-cli runner list "$org_ubuntu_scaleset_id"
+runner_name="$(./garm-cli runner list "$org_ubuntu_scaleset_id" --format json \
   | jq -r 'sort_by(.created_at) | last.name')"
 ./garm-cli runner show "$runner_name"
 ```
@@ -463,7 +461,7 @@ Then go into the Azure Portal, and observe the resources being created, and dele
 
 You should also fiddle with the `--min-idle-runners` setting as exemplified above.
 
-Create a Windows (runner) pool associated with a GitHub organization:
+Create a Windows (runner) scale set associated with a GitHub organization:
 
 ```bash
 # NB for each github action job run, garm will create a vm (and related azure
@@ -483,13 +481,13 @@ Create a Windows (runner) pool associated with a GitHub organization:
 #     MicrosoftWindowsServer:WindowsServer:2022-Datacenter:latest
 #     MicrosoftWindowsServer:WindowsServer:2022-datacenter-azure-edition-core:latest
 # NB see WindowsSetupScriptTemplate at https://github.com/cloudbase/garm-provider-common/blob/v0.1.8/cloudconfig/templates.go#L216
-./garm-cli pool create \
-  --enabled true \
+./garm-cli scaleset create \
+  --enabled \
   --enable-shell \
   --org "$org_id" \
   --min-idle-runners 0 \
   --max-runners 2 \
-  --tags garm-org-azure-amd64-windows-2022 \
+  --name garm-org-azure-amd64-windows-2022 \
   --runner-prefix rgl-garm-windows-org \
   --provider-name azure \
   --os-arch amd64 \
@@ -500,16 +498,16 @@ Create a Windows (runner) pool associated with a GitHub organization:
     "storage_account_type": "StandardSSD_LRS",
     "disk_size_gb": 127
   }'
-org_windows_pool_id="$(./garm-cli pool list "--org=$org_id" --format json \
+org_windows_scaleset_id="$(./garm-cli scaleset list "--org=$org_id" --format json \
   | jq -r \
     --arg runner_prefix rgl-garm-windows-org \
     '.[] | select(.runner_prefix == $runner_prefix) | .id')"
-./garm-cli pool update \
+./garm-cli scaleset update \
   --min-idle-runners 1 \
   --max-runners 3 \
-  "$org_windows_pool_id"
-./garm-cli runner list "$org_windows_pool_id"
-runner_name="$(./garm-cli runner list "$org_windows_pool_id" --format json \
+  "$org_windows_scaleset_id"
+./garm-cli runner list "$org_windows_scaleset_id"
+runner_name="$(./garm-cli runner list "$org_windows_scaleset_id" --format json \
   | jq -r 'sort_by(.created_at) | last.name')"
 ./garm-cli runner show "$runner_name"
 ```
@@ -525,21 +523,26 @@ You should also fiddle with the `--min-idle-runners` setting as exemplified abov
 
 Finally, when you are done with this, destroy the entire example.
 
-Start by destroying the runners, then the pools, then the infrastructure:
+Start by destroying the runners, then the scale sets, then the infrastructure:
 
 ```bash
-./garm-cli pool update --min-idle-runners 0 "$pool_id"
-./garm-cli pool update --min-idle-runners 0 "$org_ubuntu_pool_id"
-./garm-cli pool update --min-idle-runners 0 "$org_windows_pool_id"
+./garm-cli scaleset list
+./garm-cli scaleset update --min-idle-runners 0 "$scaleset_id"
+./garm-cli scaleset update --min-idle-runners 0 "$org_ubuntu_scaleset_id"
+./garm-cli scaleset update --min-idle-runners 0 "$org_windows_scaleset_id"
 # NB before continuing, go into azure and ensure there are no rgl-garm- prefixed
 #    resource groups, those should have (or are still) been deleted by garm. be
 #    patient, as it can take several minutes to finish.
 ./garm-cli runner list
 ./garm-cli pool list
-./garm-cli pool delete "$pool_id"
-./garm-cli pool delete "$org_ubuntu_pool_id"
-./garm-cli pool delete "$org_windows_pool_id"
-./garm-cli pool list
+./garm-cli scaleset list
+./garm-cli scaleset update "$scaleset_id" --enabled=false
+./garm-cli scaleset delete "$scaleset_id"
+./garm-cli scaleset update "$org_ubuntu_scaleset_id" --enabled=false
+./garm-cli scaleset delete "$org_ubuntu_scaleset_id"
+./garm-cli scaleset update "$org_windows_scaleset_id" --enabled=false
+./garm-cli scaleset delete "$org_windows_scaleset_id"
+./garm-cli scaleset list
 ./garm-cli repo list
 ./garm-cli repo delete "$repo_id"
 ./garm-cli repo list
@@ -566,6 +569,7 @@ GITHUB_COM_TOKEN='YOUR_GITHUB_PERSONAL_TOKEN' ./renovate.sh
 
 * [GitHub Actions Runner Manager (GARM)](https://github.com/cloudbase/garm)
 * [GitHub Actions Runner Manager Agent (GARM Agent)](https://github.com/cloudbase/garm-agent)
+* [GitHub Actions Runner Manager Scale Sets](https://github.com/cloudbase/garm/blob/v0.2.0/doc/scale-sets.md)
 * [GARM External Provider For Azure](https://github.com/cloudbase/garm-provider-azure)
 * [azurerm_container_group](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_group)
 * [Container groups in Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-container-groups)
